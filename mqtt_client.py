@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-import secrets
+from secrets import secrets
 from paho.mqtt import client as mqtt_client
 
 voltage_feed = "dt/boat/sensor/battery/voltage"
@@ -30,9 +30,9 @@ def connect_mqtt() -> mqtt_client:
             print("Failed to connect to MQTT server")
 
     client = mqtt_client.Client(mqtt_client_id)
-    client.username_pw_set(secrets[mqtt_username], secrets[mqtt_password])
+    client.username_pw_set(secrets['mqtt_username'], secrets['mqtt_password'])
     client.on_connect = on_connect
-    client.connect(secrets[broker], secrets[port])
+    client.connect(secrets['broker'], secrets['port'])
     return client
 
 def publish(topic, message):
