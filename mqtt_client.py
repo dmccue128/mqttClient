@@ -6,25 +6,8 @@ from paho.mqtt import client as mqtt_client
 
 boat_prefix = "dt/boat/"
 sensor_prefix = boat_prefix + "sensor/"
-battery_prefix = sensor_prefix + "battery/"
-battery_voltage_feed = battery_prefix + "voltage"
-battery_current_feed = battery_prefix + "current"
-
+all_sensor_feeds = sensor_prefix + "#"
 mqtt_client_id = "boat-client"
-
-# create a dispatch table for subscriptions
-dispatch = {}
-
-def record_data(value, file_label):
-    f = open(f'{file_label}_data.csv', "a")
-    f.write(f'{time.strftime("%Y-%m-%d,%H:%M:%S", time.gmtime())},{value}' )
-    f.close()
-
-def record_voltage(client, userdata, msg):
-    record_data(msg.payload.decode(),'voltage')
-
-def record_current(client, userdata, msg):
-    record_data(msg.payload.decode(),'current')
 
 def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
@@ -39,29 +22,20 @@ def connect_mqtt() -> mqtt_client:
     client.connect(secrets['broker'], secrets['port'])
     return client
 
-def publish(topic, message):
-    result = client.publish(topic, message)
-    status = result[0]
-    if status == 0:
-        print(f'Published {message}')
-    else:
-        print(f'Failed to publish {message}')
+def record_data(file_label, payload):
+    f = open(f'{file_label}_data.csv', "a")
+    f.write(f'{time.strftime("%Y-%m-%d,%H:%M:%S", time.localtime())},{payload}' )
+    f.close()
 
-def subscribe(client: mqtt_client, topic, on_recv):
-    client.subscribe(topic)
-    dispatch[topic] = on_recv
-
-def dispatcher(client, userdata, msg):
-    if msg.topic in dispatch:
-        dispatch[msg.topic](client, userdata, msg)
-    else:
-        print(f'No handler for topic: {topic}')
+def process_message(client, userdata, msg):
+    topic = msg.topic.removeprefix(sensor_prefix)
+    label = topic.replace('/', '_')
+    record_data(label, msg.payload.decode())
 
 def run():
     client = connect_mqtt()
-    subscribe(client, battery_voltage_feed, record_voltage)
-    subscribe(client, battery_current_feed, record_current)
-    client.on_message = dispatcher
+    client.subscribe(all_sensor_feeds)
+    client.on_message = process_message
     client.loop_forever()
 
 if __name__ == "__main__":
