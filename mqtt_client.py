@@ -4,8 +4,12 @@ import time
 from secrets import secrets
 from paho.mqtt import client as mqtt_client
 
-voltage_feed = "dt/boat/sensor/battery/voltage"
-current_feed = "dt/boat/sensor/battery/current"
+boat_prefix = "dt/boat/"
+sensor_prefix = boat_prefix + "sensor/"
+battery_prefix = sensor_prefix + "battery/"
+battery_voltage_feed = battery_prefix + "voltage"
+battery_current_feed = battery_prefix + "current"
+
 mqtt_client_id = "boat-client"
 
 # create a dispatch table for subscriptions
@@ -55,8 +59,8 @@ def dispatcher(client, userdata, msg):
 
 def run():
     client = connect_mqtt()
-    subscribe(client, voltage_feed, record_voltage)
-    subscribe(client, current_feed, record_current)
+    subscribe(client, battery_voltage_feed, record_voltage)
+    subscribe(client, battery_current_feed, record_current)
     client.on_message = dispatcher
     client.loop_forever()
 
